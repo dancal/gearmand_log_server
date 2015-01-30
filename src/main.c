@@ -17,21 +17,31 @@
 #include <errno.h>
 #include <fcntl.h>
     
+#include <map>
+#include <vector>
+
+#include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp>
+#include <boost/foreach.hpp>
+
 #define FILE_MODE   ( S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH )
     
 #define ROOT_LOG "/home/static/wp_log_worker/data"
 #define MAX_PATH_LEN 1024
 #define MAX_WORK_PROCESS    1000000
 #define SERVER_LOCATION     "hk"
+#define LOG_FUNCTION_NAME	"rtb_log_write"
     
-const char *worker_name;
 const char *worker_idx;
+const char *worker_name;
 const int worker_timeout = 10;
 long long jobs_processed = 0;
 
 using namespace std;
+ofstream hFileHandle;
+char beforeTime[64];
 
-void* gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, gearman_return_t *ret_ptr) {
+void *gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, gearman_return_t *ret_ptr) {
 
     //auto jobptr = gearman_job_workload(job);//this takes the data from the client
     //if (jobptr) std::cout << "job: " << (char*) jobptr << std::endl;
@@ -48,24 +58,25 @@ void* gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, 
     strftime(datestr,sizeof(datestr),"%Y%m%d%H%M",ttp);
     sprintf(filename,"%s/%s_%s_%s_%s.log", ROOT_LOG, SERVER_LOCATION, worker_name, datestr, worker_idx);
 
-	printf("==%s==\n", filename);
-	/*
+	if ( strcmp(datestr,beforeTime) != 0 ) {
+		hFileHandle.flush();
+		hFileHandle.close();
+		hFileHandle.open(filename, ios::out|ios::app);
+	}
+	memcpy(beforeTime, datestr, sizeof(datestr));
+
+	
     char *inp_char = static_cast<char *>(std::malloc(gearman_job_workload_size(job) + 1));
     memcpy(inp_char, gearman_job_workload(job), gearman_job_workload_size(job));
     inp_char[gearman_job_workload_size(job)] = '\0';
 
-    ofstream outputfile;
-    outputfile.open(filename, ios::out|ios::app);
-    if (outputfile.fail()) {
+    if (hFileHandle.fail()) {
         cout << "error" << endl;
     } else {
-        outputfile << inp_char << endl;
+        hFileHandle << inp_char << endl;
     }
-	outputfile.flush();
-    outputfile.close();
 
     free(inp_char);
-	*/
 
     *ret_ptr = GEARMAN_SUCCESS;
     *result_size = 0;
@@ -100,11 +111,8 @@ int main( int argc, char** argv ) {
     gearman_return_t gs_code = gearman_worker_add_server(gworker, ghost, gport);
     status_print(gs_code);
 
-    const char* function_name = "rtb_log_write";
-    unsigned timeout = 0;
     void * job_context = NULL;
-
-    gs_code = gearman_worker_add_function(gworker,function_name, timeout, gworker_fn_demon, job_context);
+    gs_code = gearman_worker_add_function( gworker, worker_name, worker_timeout, gworker_fn_demon, job_context);
     //status_print(gs_code);
     while ( 1 ) {
         gs_code = gearman_worker_work(gworker);
@@ -122,6 +130,8 @@ int main( int argc, char** argv ) {
         }
 
     }
+	hFileHandle.flush();
+	hFileHandle.close();
     gearman_worker_free(gworker);
 
     cout<<"done"<<endl;

@@ -40,13 +40,12 @@ class DeliveryLogSendToGearman {
 
 $rServersIP			= array();
 $rServersIP[]		= '127.0.0.1';
-$server_port		= 4370;
+$server_port		= 4730;
 $timeout			= 1000;
 $jobs_name			= 'rtb_log_write';
 $sLogJson			= 'test';
 
 $logServer          = new DeliveryLogSendToGearman( $rServersIP, $server_port, $timeout );
-echo $logServer->LogSend( $jobs_name, $sLogJson );
-echo "xx";
+$logServer->LogSend( $jobs_name, $sLogJson );
 
 ?>
