@@ -48,6 +48,8 @@ void* gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, 
     strftime(datestr,sizeof(datestr),"%Y%m%d%H%M",ttp);
     sprintf(filename,"%s/%s_%s_%s_%s.log", ROOT_LOG, SERVER_LOCATION, worker_name, datestr, worker_idx);
 
+	printf("==%s==\n", filename);
+	/*
     char *inp_char = static_cast<char *>(std::malloc(gearman_job_workload_size(job) + 1));
     memcpy(inp_char, gearman_job_workload(job), gearman_job_workload_size(job));
     inp_char[gearman_job_workload_size(job)] = '\0';
@@ -63,6 +65,7 @@ void* gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, 
     outputfile.close();
 
     free(inp_char);
+	*/
 
     *ret_ptr = GEARMAN_SUCCESS;
     *result_size = 0;
@@ -81,8 +84,8 @@ int main( int argc, char** argv ) {
 
     worker_name   = argv[1];
     worker_idx    = argv[2];
-    char *ghost         = argv[3];
-    int gport           = atoi(argv[4]);
+    char *ghost   = argv[3];
+    int gport     = atoi(argv[4]);
 
     auto status_print = [](gearman_return_t gserver_code){
         cout<<gserver_code<< " --  ";

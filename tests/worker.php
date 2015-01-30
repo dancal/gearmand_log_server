@@ -1,4 +1,8 @@
+#!/usr/bin/php
 <?php
+
+error_reporting(E_ALL);
+ini_set("display_errors", 1);
 
   $worker = new GearmanWorker();
   $worker->addServer('127.0.0.1','4730');
@@ -12,4 +16,4 @@
       echo "Received job: {$job->handle()}" . PHP_EOL; 
       return strrev($job->workload());
   }
-  ?>
+?>
