@@ -5,7 +5,7 @@ CC = g++
 TARGET=./bin/wp_log_worker
 
 INCLUDES=-I./include
-CFLAGS=-std=c++11 -g -Wall 
+CFLAGS=-std=c++11 -Wall -O3 -DUSE_JEMALLOC -ljemalloc -DNDEBUG -DPIC
 #CFLAGS+= -Wextra -Werror -pipe
 CFLAGS+=$(INCLUDES)
 

@@ -26,10 +26,11 @@ class DeliveryLogSendToGearman {
             }   
         }
     
+		return $this;
     }
 
     public function LogSend( $job_name, $sLogJson ) {
-        $nRet               = $this->gmClient->doBackground($job_name, $sLogJson);
+        $nRet               = $this->gmClient->doHighBackground($job_name, $sLogJson);
         if ($this->gmClient->returnCode() != GEARMAN_SUCCESS) {
             return 0;
         }
@@ -48,4 +49,5 @@ $sLogJson			= 'test';
 $logServer          = new DeliveryLogSendToGearman( $rServersIP, $server_port, $timeout );
 $logServer->LogSend( $jobs_name, $sLogJson );
 
+var_dump($logServer);
 ?>
