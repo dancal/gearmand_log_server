@@ -13,6 +13,7 @@
 #include <time.h>
 #include <string>
 
+#include <signal.h>
 #include <stdarg.h> 
 #include <errno.h>
 #include <fcntl.h>
@@ -41,16 +42,25 @@ using namespace std;
 ofstream hFileHandle;
 char beforeTime[64];
 
+char datestr[64];
+char filename[1024];
+
+void hFileHandleClose( int sig ) {
+	if ( hFileHandle.is_open() ) {
+		hFileHandle.flush();
+		hFileHandle.close();
+	}
+    cout<<"done"<<endl;
+	exit(0);
+}
+
 void *gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, gearman_return_t *ret_ptr) {
 
     //auto jobptr = gearman_job_workload(job);//this takes the data from the client
     //if (jobptr) std::cout << "job: " << (char*) jobptr << std::endl;
 
-    char datestr[64];
-    char filename[1024];
-
-    datestr[0]  = 0;
-    filename[0] = 0;
+	memset(datestr,0x00,sizeof(datestr));
+	memset(filename,0x00,sizeof(filename));
 
     time_t tms = time(NULL);
     struct tm tt;
@@ -59,13 +69,15 @@ void *gworker_fn_demon(gearman_job_st *job, void *context, size_t *result_size, 
     sprintf(filename,"%s/%s_%s_%s_%s.log", ROOT_LOG, SERVER_LOCATION, worker_name, datestr, worker_idx);
 
 	if ( strcmp(datestr,beforeTime) != 0 ) {
-		hFileHandle.flush();
-		hFileHandle.close();
+		if ( hFileHandle.is_open() ) {
+			hFileHandle.flush();
+			hFileHandle.close();
+		}
 		hFileHandle.open(filename, ios::out|ios::app);
 	}
+	memset(beforeTime,0x0,sizeof(beforeTime));
 	memcpy(beforeTime, datestr, sizeof(datestr));
 
-	
     char *inp_char = static_cast<char *>(std::malloc(gearman_job_workload_size(job) + 1));
     memcpy(inp_char, gearman_job_workload(job), gearman_job_workload_size(job));
     inp_char[gearman_job_workload_size(job)] = '\0';
@@ -97,6 +109,9 @@ int main( int argc, char** argv ) {
     worker_idx    = argv[2];
     char *ghost   = argv[3];
     int gport     = atoi(argv[4]);
+
+	signal(SIGINT, &hFileHandleClose);
+	signal(SIGABRT, &hFileHandleClose);
 
     auto status_print = [](gearman_return_t gserver_code){
         cout<<gserver_code<< " --  ";
@@ -130,8 +145,10 @@ int main( int argc, char** argv ) {
         }
 
     }
-	hFileHandle.flush();
-	hFileHandle.close();
+	if ( hFileHandle.is_open() ) {
+		hFileHandle.flush();
+		hFileHandle.close();
+	}
     gearman_worker_free(gworker);
 
     cout<<"done"<<endl;
